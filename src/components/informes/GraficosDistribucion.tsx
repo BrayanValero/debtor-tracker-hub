@@ -1,48 +1,45 @@
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
-interface GraficosDistribucionProps {
-  estadoPrestamosData: Array<{ name: string; value: number }>;
-  metodosPagoData: Array<{ name: string; value: number }>;
+type ChartItem = {
+  name: string;
+  value: number;
+};
+
+type GraficosDistribucionProps = {
+  estadoPrestamosData: ChartItem[];
+  metodosPagoData: ChartItem[];
   colors: string[];
-}
+};
 
-const GraficosDistribucion = ({ 
-  estadoPrestamosData, 
-  metodosPagoData, 
-  colors 
-}: GraficosDistribucionProps) => {
+const GraficosDistribucion = ({ estadoPrestamosData, metodosPagoData, colors }: GraficosDistribucionProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
           <CardTitle>Distribución por Estado</CardTitle>
-          <CardDescription>Estado actual de los préstamos</CardDescription>
+          <CardDescription>Estado de los préstamos</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] w-full">
+          <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={estadoPrestamosData}
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
                   dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
                   {estadoPrestamosData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${value} préstamos`, null]} />
+                <Tooltip formatter={(value) => [`${value} préstamos`, 'Cantidad']} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -51,26 +48,28 @@ const GraficosDistribucion = ({
       
       <Card>
         <CardHeader>
-          <CardTitle>Métodos de Pago Utilizados</CardTitle>
-          <CardDescription>Preferencias de los deudores</CardDescription>
+          <CardTitle>Métodos de Pago</CardTitle>
+          <CardDescription>Distribución por método de pago</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px] w-full">
+          <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={metodosPagoData}
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  labelLine={false}
+                  outerRadius={80}
+                  fill="#8884d8"
                   dataKey="value"
-                  label={({ name, value }) => `${name}: ${value}`}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
                   {metodosPagoData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => [`${value} pagos`, null]} />
+                <Tooltip formatter={(value) => [`${value} pagos`, 'Cantidad']} />
               </PieChart>
             </ResponsiveContainer>
           </div>

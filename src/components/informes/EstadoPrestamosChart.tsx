@@ -1,36 +1,30 @@
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
-interface EstadoPrestamosChartProps {
-  data: Array<{ name: string; value: number }>;
-  colors: string[];
-}
+type ChartItem = {
+  name: string;
+  value: number;
+};
 
-const EstadoPrestamosChart = ({ data, colors }: EstadoPrestamosChartProps) => {
+const EstadoPrestamosChart = ({ data, colors }: { data: ChartItem[], colors: string[] }) => {
   return (
-    <Card>
+    <Card className="col-span-1">
       <CardHeader>
         <CardTitle>Estado de Préstamos</CardTitle>
         <CardDescription>Distribución por estado</CardDescription>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="h-[300px] w-full">
+      <CardContent>
+        <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={90}
-                paddingAngle={5}
+                labelLine={false}
+                outerRadius={80}
+                fill="#8884d8"
                 dataKey="value"
                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
               >
@@ -38,9 +32,23 @@ const EstadoPrestamosChart = ({ data, colors }: EstadoPrestamosChartProps) => {
                   <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value) => [`${value} préstamos`, null]} />
+              <Tooltip formatter={(value) => [`${value} préstamos`, 'Cantidad']} />
             </PieChart>
           </ResponsiveContainer>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-4 text-center text-sm">
+          {data.map((item, index) => (
+            <div key={index} className="flex flex-col">
+              <div className="flex items-center justify-center">
+                <div
+                  className="h-3 w-3 rounded-full mr-1"
+                  style={{ backgroundColor: colors[index % colors.length] }}
+                ></div>
+                <span>{item.name}</span>
+              </div>
+              <span className="text-muted-foreground">{item.value}</span>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

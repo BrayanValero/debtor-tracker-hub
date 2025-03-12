@@ -1,75 +1,87 @@
 
+import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Deudor } from "@/lib/supabase";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { SearchIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-interface ListadoDeudoresProps {
-  deudores: Deudor[];
-}
+const ListadoDeudores = ({ deudores }: { deudores: Deudor[] }) => {
+  const [search, setSearch] = useState("");
+  const navigate = useNavigate();
 
-const ListadoDeudores = ({ deudores }: ListadoDeudoresProps) => {
   const formatFecha = (fechaStr: string) => {
     try {
-      return format(new Date(fechaStr), "dd 'de' MMMM, yyyy", { locale: es });
+      return format(new Date(fechaStr), "dd/MM/yyyy", { locale: es });
     } catch (error) {
       return fechaStr;
     }
   };
 
+  const filteredDeudores = deudores.filter(
+    deudor => deudor.nombre.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Listado de Deudores</CardTitle>
-        <CardDescription>
-          Información completa de todos los deudores registrados
-        </CardDescription>
+        <CardDescription>Información detallada de todos los deudores</CardDescription>
+        <div className="relative mt-2">
+          <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nombre..."
+            className="pl-8"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Nombre</TableHead>
-              <TableHead>Préstamo</TableHead>
-              <TableHead>Fecha</TableHead>
-              <TableHead>Interés (%)</TableHead>
-              <TableHead>Interés Acumulado</TableHead>
+              <TableHead>Fecha Préstamo</TableHead>
+              <TableHead>Monto</TableHead>
+              <TableHead>Interés</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Saldo Pendiente</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {deudores.map((deudor) => (
+            {filteredDeudores.map((deudor) => (
               <TableRow key={deudor.id}>
                 <TableCell className="font-medium">{deudor.nombre}</TableCell>
-                <TableCell>${deudor.monto_prestado.toFixed(2)}</TableCell>
                 <TableCell>{formatFecha(deudor.fecha_prestamo)}</TableCell>
-                <TableCell>{deudor.tasa_interes.toFixed(2)}%</TableCell>
-                <TableCell>${deudor.interes_acumulado.toFixed(2)}</TableCell>
+                <TableCell>${deudor.monto_prestado.toFixed(2)}</TableCell>
+                <TableCell>{(deudor.tasa_interes * 100).toFixed(1)}%</TableCell>
                 <TableCell>
-                  <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     deudor.estado === 'activo' ? 'bg-green-100 text-green-800' :
                     deudor.estado === 'vencido' ? 'bg-red-100 text-red-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {deudor.estado.charAt(0).toUpperCase() + deudor.estado.slice(1)}
-                  </div>
+                  </span>
                 </TableCell>
-                <TableCell>${deudor.saldo_pendiente?.toFixed(2) || "N/A"}</TableCell>
+                <TableCell>
+                  ${deudor.saldo_pendiente !== undefined ? deudor.saldo_pendiente.toFixed(2) : '0.00'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/deudores/${deudor.id}`)}
+                  >
+                    Ver detalles
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

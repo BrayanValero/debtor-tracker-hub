@@ -1,29 +1,17 @@
 
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Deudor } from "@/lib/supabase";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon } from "lucide-react";
-import { Deudor } from "@/lib/supabase";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useNavigate } from "react-router-dom";
 
-interface PagosProximosProps {
-  pagosProximos: Array<Deudor & { proximo_pago: string }>;
-}
+type PagoProximo = Deudor & { proximo_pago: string };
 
-const PagosProximos = ({ pagosProximos }: PagosProximosProps) => {
+const PagosProximos = ({ pagosProximos }: { pagosProximos: PagoProximo[] }) => {
+  const navigate = useNavigate();
+
   const formatFecha = (fechaStr: string) => {
     try {
       return format(new Date(fechaStr), "dd 'de' MMMM, yyyy", { locale: es });
@@ -35,15 +23,13 @@ const PagosProximos = ({ pagosProximos }: PagosProximosProps) => {
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>Pagos Próximos</CardTitle>
-        <CardDescription>
-          Deudores con pagos programados en los próximos 7 días
-        </CardDescription>
+        <CardTitle>Próximos Pagos</CardTitle>
+        <CardDescription>Pagos programados para los próximos 7 días</CardDescription>
       </CardHeader>
       <CardContent>
         {pagosProximos.length === 0 ? (
-          <div className="text-center py-4">
-            <p className="text-muted-foreground">No hay pagos programados para los próximos días</p>
+          <div className="flex justify-center py-6">
+            <p className="text-muted-foreground">No hay pagos programados para los próximos 7 días</p>
           </div>
         ) : (
           <Table>
@@ -51,22 +37,25 @@ const PagosProximos = ({ pagosProximos }: PagosProximosProps) => {
               <TableRow>
                 <TableHead>Deudor</TableHead>
                 <TableHead>Fecha de Pago</TableHead>
-                <TableHead>Monto Prestado</TableHead>
-                <TableHead>Saldo Pendiente</TableHead>
+                <TableHead>Monto Préstamo</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pagosProximos.map((deudor) => (
                 <TableRow key={deudor.id}>
                   <TableCell className="font-medium">{deudor.nombre}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center">
-                      <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                      {formatFecha(deudor.proximo_pago)}
-                    </div>
-                  </TableCell>
+                  <TableCell>{formatFecha(deudor.proximo_pago)}</TableCell>
                   <TableCell>${deudor.monto_prestado.toFixed(2)}</TableCell>
-                  <TableCell>${deudor.saldo_pendiente?.toFixed(2) || "N/A"}</TableCell>
+                  <TableCell className="text-right">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate(`/deudores/${deudor.id}`)}
+                    >
+                      Ver detalles
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

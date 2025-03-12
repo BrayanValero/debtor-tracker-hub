@@ -1,44 +1,54 @@
 
 import { Deudor, Pago } from "@/lib/supabase";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
 
-// Calcular los datos para el gráfico de montos por mes
 export const calcularMontosData = (deudores: Deudor[], pagos: Pago[]) => {
-  // Crear un mapa de los últimos 6 meses
-  const últimosMeses: Record<string, { prestamos: number, pagos: number }> = {};
-  const hoy = new Date();
+  const montosMap = new Map<string, { prestado: number; pagado: number }>();
   
-  for (let i = 5; i >= 0; i--) {
-    const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-    const nombreMes = format(fecha, "MMM yyyy", { locale: es });
-    últimosMeses[nombreMes] = { prestamos: 0, pagos: 0 };
-  }
-  
-  // Sumar préstamos por mes
+  // Agrupar los préstamos por mes
   deudores.forEach(deudor => {
-    const fechaPrestamo = new Date(deudor.fecha_prestamo);
-    const nombreMes = format(fechaPrestamo, "MMM yyyy", { locale: es });
+    const fecha = new Date(deudor.fecha_prestamo);
+    const key = `${fecha.getFullYear()}-${fecha.getMonth() + 1}`;
     
-    if (últimosMeses[nombreMes]) {
-      últimosMeses[nombreMes].prestamos += deudor.monto_prestado;
+    if (!montosMap.has(key)) {
+      montosMap.set(key, { prestado: 0, pagado: 0 });
     }
+    
+    const data = montosMap.get(key)!;
+    data.prestado += deudor.monto_prestado;
   });
   
-  // Sumar pagos por mes
+  // Agrupar los pagos por mes
   pagos.forEach(pago => {
-    const fechaPago = new Date(pago.fecha_pago);
-    const nombreMes = format(fechaPago, "MMM yyyy", { locale: es });
+    const fecha = new Date(pago.fecha_pago);
+    const key = `${fecha.getFullYear()}-${fecha.getMonth() + 1}`;
     
-    if (últimosMeses[nombreMes]) {
-      últimosMeses[nombreMes].pagos += pago.monto_pagado;
+    if (!montosMap.has(key)) {
+      montosMap.set(key, { prestado: 0, pagado: 0 });
     }
+    
+    const data = montosMap.get(key)!;
+    data.pagado += pago.monto_pagado;
   });
   
-  // Convertir el mapa a un array para el gráfico
-  return Object.entries(últimosMeses).map(([mes, datos]) => ({
-    mes,
-    prestamos: datos.prestamos,
-    pagos: datos.pagos
-  }));
+  // Convertir a array y ordenar por fecha
+  const sortedKeys = Array.from(montosMap.keys()).sort();
+  
+  // Formatear para el gráfico
+  return sortedKeys.map(key => {
+    const [year, month] = key.split('-').map(Number);
+    const data = montosMap.get(key)!;
+    
+    return {
+      name: `${month}/${year}`,
+      prestado: data.prestado,
+      pagado: data.pagado,
+    };
+  });
+};
+
+export const formatTooltipValue = (value: any) => {
+  if (typeof value === 'number') {
+    return value.toFixed(2);
+  }
+  return value;
 };
