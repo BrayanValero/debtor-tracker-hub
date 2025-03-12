@@ -9,13 +9,6 @@ const Index = () => {
 
   useEffect(() => {
     if (!loading) {
-      // En modo de desarrollo, redirige directamente al dashboard
-      // cuando faltan las credenciales de Supabase
-      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-        navigate("/dashboard");
-        return;
-      }
-      
       if (user) {
         navigate("/dashboard");
       } else {

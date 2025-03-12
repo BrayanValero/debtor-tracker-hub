@@ -1,15 +1,9 @@
-
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/supabase";
 
-// Obtener variables de entorno o usar valores de desarrollo
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://example.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
-
-// Advierte en la consola en lugar de bloquear la aplicación
-if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
-  console.warn('⚠️ Faltan variables de entorno para Supabase. La aplicación funcionará en modo demo con datos simulados.');
-}
+// Use Supabase credentials
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ygcbqgzpbsmqtvsfqbjb.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlnY2JxZ3pwYnNtcXR2c2ZxYmpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE2NjQ1NTMsImV4cCI6MjA1NzI0MDU1M30.EKNpPSFVpGDEiX7keoDRkAdLhTW2SDAomGU3niNl9Sc';
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
@@ -43,22 +37,7 @@ export type ResumenEstadisticas = {
   pagos_proximos: Array<Deudor & { proximo_pago: string }>;
 };
 
-// Sistema de autenticación mock para desarrollo
-export const mockAuth = {
-  // Credenciales de demo
-  demoCredentials: { email: 'admin@ejemplo.com', password: 'contraseña' },
-  
-  // Método para validar las credenciales de demo
-  validateCredentials: (email: string, password: string) => {
-    const isValid = 
-      email === mockAuth.demoCredentials.email && 
-      password === mockAuth.demoCredentials.password;
-    
-    return isValid;
-  }
-};
-
-// Datos mock para la aplicación
+// Keep the mock data for fallback if needed
 export const mockData = {
   deudores: [
     {

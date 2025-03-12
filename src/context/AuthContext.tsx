@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { type Session, type User } from "@supabase/supabase-js";
-import { supabase, mockAuth } from "../lib/supabase";
+import { supabase } from "../lib/supabase";
 import { toast } from "sonner";
 
 type AuthContextType = {
@@ -18,34 +18,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const isDemoMode = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   useEffect(() => {
-    // Si estamos en modo demo, revisamos localStorage
-    if (isDemoMode) {
-      const storedUser = localStorage.getItem('demo_user');
-      if (storedUser) {
-        // Crear un usuario simulado
-        const mockUser = {
-          id: '1',
-          email: mockAuth.demoCredentials.email,
-          role: 'admin',
-        } as User;
-        
-        setUser(mockUser);
-        // No establecemos session porque no lo usamos directamente en la UI
-      }
-      setLoading(false);
-      return;
-    }
-
-    // Si tenemos credenciales de Supabase, usamos la autenticación real
+    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -53,38 +35,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
-      if (!isDemoMode && subscription) {
-        subscription.unsubscribe();
-      }
+      subscription.unsubscribe();
     };
-  }, [isDemoMode]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
       
-      // En modo demo, verificamos las credenciales contra nuestros valores fijos
-      if (isDemoMode) {
-        if (mockAuth.validateCredentials(email, password)) {
-          // Crear un usuario simulado
-          const mockUser = {
-            id: '1',
-            email: email,
-            role: 'admin',
-          } as User;
-          
-          setUser(mockUser);
-          // Guardamos en localStorage para mantener la sesión
-          localStorage.setItem('demo_user', JSON.stringify(mockUser));
-          toast.success("Inicio de sesión exitoso (modo demo)");
-          return;
-        } else {
-          toast.error("Credenciales incorrectas. En modo demo, use: admin@ejemplo.com / contraseña");
-          throw new Error("Credenciales incorrectas");
-        }
-      }
-      
-      // En modo normal, usamos Supabase
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
@@ -104,16 +62,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       setLoading(true);
-      
-      // En modo demo, simplemente limpiamos el localStorage
-      if (isDemoMode) {
-        localStorage.removeItem('demo_user');
-        setUser(null);
-        toast.success("Sesión cerrada (modo demo)");
-        return;
-      }
-      
-      // En modo normal, usamos Supabase
       await supabase.auth.signOut();
       toast.success("Sesión cerrada");
     } catch (error) {
