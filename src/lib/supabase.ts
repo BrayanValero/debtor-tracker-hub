@@ -1,11 +1,14 @@
+
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/supabase";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Obtener variables de entorno o usar valores de desarrollo
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://example.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error("Faltan variables de entorno para Supabase");
+// Advierte en la consola en lugar de bloquear la aplicación
+if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  console.warn('⚠️ Faltan variables de entorno para Supabase. La aplicación funcionará en modo demo con datos simulados.');
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
