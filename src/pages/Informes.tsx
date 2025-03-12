@@ -186,6 +186,14 @@ const Informes = () => {
     }
   };
 
+  // Formatter function to safely handle different value types
+  const formatTooltipValue = (value: any, name?: string) => {
+    if (typeof value === 'number') {
+      return [`$${value.toFixed(2)}`, name];
+    }
+    return [`${value}`, name];
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -485,7 +493,7 @@ const Informes = () => {
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="mes" />
                         <YAxis />
-                        <Tooltip formatter={(value) => [`$${value.toFixed(2)}`, null]} />
+                        <Tooltip formatter={formatTooltipValue} />
                         <Legend />
                         <Bar dataKey="prestamos" name="Préstamos" fill="#3b82f6" />
                         <Bar dataKey="pagos" name="Pagos" fill="#10b981" />
