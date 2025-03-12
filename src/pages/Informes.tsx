@@ -1,16 +1,22 @@
 
 import { useState, useEffect } from "react";
 import { supabase, Deudor, Pago, ResumenEstadisticas } from "@/lib/supabase";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Area, AreaChart, PieChart, Pie, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts";
-import { CalendarIcon, DownloadIcon, CreditCardIcon, ArrowUpIcon, CircleDollarSignIcon, AlertCircleIcon } from "lucide-react";
+import { DownloadIcon } from "lucide-react";
 import { format, addDays, isBefore } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
+import EstadisticasCards from "@/components/informes/EstadisticasCards";
+import PagosProximos from "@/components/informes/PagosProximos";
+import EstadoPrestamosChart from "@/components/informes/EstadoPrestamosChart";
+import MetodosPagoChart from "@/components/informes/MetodosPagoChart";
+import EvolucionPrestamosChart from "@/components/informes/EvolucionPrestamosChart";
+import ListadoDeudores from "@/components/informes/ListadoDeudores";
+import HistorialPagos from "@/components/informes/HistorialPagos";
+import GraficosDistribucion from "@/components/informes/GraficosDistribucion";
+import { calcularMontosData } from "@/utils/informes-utils";
 
 const Informes = () => {
   const [estadisticas, setEstadisticas] = useState<ResumenEstadisticas>({
@@ -129,44 +135,7 @@ const Informes = () => {
   ].filter(item => item.value > 0);
 
   // Datos para el gráfico de montos por mes
-  const montosData = () => {
-    // Crear un mapa de los últimos 6 meses
-    const últimosMeses: Record<string, { prestamos: number, pagos: number }> = {};
-    const hoy = new Date();
-    
-    for (let i = 5; i >= 0; i--) {
-      const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-      const nombreMes = format(fecha, "MMM yyyy", { locale: es });
-      últimosMeses[nombreMes] = { prestamos: 0, pagos: 0 };
-    }
-    
-    // Sumar préstamos por mes
-    deudores.forEach(deudor => {
-      const fechaPrestamo = new Date(deudor.fecha_prestamo);
-      const nombreMes = format(fechaPrestamo, "MMM yyyy", { locale: es });
-      
-      if (últimosMeses[nombreMes]) {
-        últimosMeses[nombreMes].prestamos += deudor.monto_prestado;
-      }
-    });
-    
-    // Sumar pagos por mes
-    pagos.forEach(pago => {
-      const fechaPago = new Date(pago.fecha_pago);
-      const nombreMes = format(fechaPago, "MMM yyyy", { locale: es });
-      
-      if (últimosMeses[nombreMes]) {
-        últimosMeses[nombreMes].pagos += pago.monto_pagado;
-      }
-    });
-    
-    // Convertir el mapa a un array para el gráfico
-    return Object.entries(últimosMeses).map(([mes, datos]) => ({
-      mes,
-      prestamos: datos.prestamos,
-      pagos: datos.pagos
-    }));
-  };
+  const montosData = calcularMontosData(deudores, pagos);
 
   const handleExportarPDF = () => {
     toast.success("Función de exportar a PDF en desarrollo");
@@ -176,22 +145,6 @@ const Informes = () => {
   const handleExportarExcel = () => {
     toast.success("Función de exportar a Excel en desarrollo");
     // Aquí iría la implementación para exportar a Excel
-  };
-
-  const formatFecha = (fechaStr: string) => {
-    try {
-      return format(new Date(fechaStr), "dd 'de' MMMM, yyyy", { locale: es });
-    } catch (error) {
-      return fechaStr;
-    }
-  };
-
-  // Formatter function to safely handle different value types
-  const formatTooltipValue = (value: any, name?: string) => {
-    if (typeof value === 'number') {
-      return [`$${value.toFixed(2)}`, name];
-    }
-    return [`${value}`, name];
   };
 
   return (
@@ -234,332 +187,30 @@ const Informes = () => {
             </TabsList>
             
             <TabsContent value="resumen">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Préstamos Activos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center">
-                      <CreditCardIcon className="h-5 w-5 mr-2 text-blue-500" />
-                      <div className="text-2xl font-bold">
-                        {estadisticas.total_prestamos_activos}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Monto Total Activo
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center">
-                      <CircleDollarSignIcon className="h-5 w-5 mr-2 text-green-500" />
-                      <div className="text-2xl font-bold">
-                        ${estadisticas.monto_total_activo.toFixed(2)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Total de Intereses
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center">
-                      <ArrowUpIcon className="h-5 w-5 mr-2 text-orange-500" />
-                      <div className="text-2xl font-bold">
-                        ${estadisticas.total_intereses.toFixed(2)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Pagos Próximos</CardTitle>
-                  <CardDescription>
-                    Deudores con pagos programados en los próximos 7 días
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {estadisticas.pagos_proximos.length === 0 ? (
-                    <div className="text-center py-4">
-                      <p className="text-muted-foreground">No hay pagos programados para los próximos días</p>
-                    </div>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Deudor</TableHead>
-                          <TableHead>Fecha de Pago</TableHead>
-                          <TableHead>Monto Prestado</TableHead>
-                          <TableHead>Saldo Pendiente</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {estadisticas.pagos_proximos.map((deudor) => (
-                          <TableRow key={deudor.id}>
-                            <TableCell className="font-medium">{deudor.nombre}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center">
-                                <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                                {formatFecha(deudor.proximo_pago)}
-                              </div>
-                            </TableCell>
-                            <TableCell>${deudor.monto_prestado.toFixed(2)}</TableCell>
-                            <TableCell>${deudor.saldo_pendiente?.toFixed(2) || "N/A"}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-              </Card>
+              <EstadisticasCards estadisticas={estadisticas} />
+              <PagosProximos pagosProximos={estadisticas.pagos_proximos} />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Estado de Préstamos</CardTitle>
-                    <CardDescription>Distribución por estado</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={estadoPrestamosData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={90}
-                            paddingAngle={5}
-                            dataKey="value"
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          >
-                            {estadoPrestamosData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => [`${value} préstamos`, null]} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Métodos de Pago</CardTitle>
-                    <CardDescription>Distribución por tipo</CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={metodosPagoData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={90}
-                            paddingAngle={5}
-                            dataKey="value"
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          >
-                            {metodosPagoData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => [`${value} pagos`, null]} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
+                <EstadoPrestamosChart data={estadoPrestamosData} colors={COLORS} />
+                <MetodosPagoChart data={metodosPagoData} colors={COLORS} />
               </div>
             </TabsContent>
             
             <TabsContent value="deudores">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Listado de Deudores</CardTitle>
-                  <CardDescription>
-                    Información completa de todos los deudores registrados
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nombre</TableHead>
-                        <TableHead>Préstamo</TableHead>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead>Interés (%)</TableHead>
-                        <TableHead>Interés Acumulado</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead>Saldo Pendiente</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {deudores.map((deudor) => (
-                        <TableRow key={deudor.id}>
-                          <TableCell className="font-medium">{deudor.nombre}</TableCell>
-                          <TableCell>${deudor.monto_prestado.toFixed(2)}</TableCell>
-                          <TableCell>{formatFecha(deudor.fecha_prestamo)}</TableCell>
-                          <TableCell>{deudor.tasa_interes.toFixed(2)}%</TableCell>
-                          <TableCell>${deudor.interes_acumulado.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              deudor.estado === 'activo' ? 'bg-green-100 text-green-800' :
-                              deudor.estado === 'vencido' ? 'bg-red-100 text-red-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {deudor.estado.charAt(0).toUpperCase() + deudor.estado.slice(1)}
-                            </div>
-                          </TableCell>
-                          <TableCell>${deudor.saldo_pendiente?.toFixed(2) || "N/A"}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <ListadoDeudores deudores={deudores} />
             </TabsContent>
             
             <TabsContent value="pagos">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Historial de Pagos</CardTitle>
-                  <CardDescription>
-                    Registro histórico de todos los pagos recibidos
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Fecha</TableHead>
-                        <TableHead>Deudor</TableHead>
-                        <TableHead>Monto</TableHead>
-                        <TableHead>Método</TableHead>
-                        <TableHead>Comentario</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pagos.map((pago) => {
-                        const deudor = deudores.find(d => d.id === pago.deudor_id);
-                        return (
-                          <TableRow key={pago.id}>
-                            <TableCell>{formatFecha(pago.fecha_pago)}</TableCell>
-                            <TableCell className="font-medium">
-                              {deudor ? deudor.nombre : "Deudor no encontrado"}
-                            </TableCell>
-                            <TableCell>${pago.monto_pagado.toFixed(2)}</TableCell>
-                            <TableCell>
-                              <span className="capitalize">{pago.metodo_pago}</span>
-                            </TableCell>
-                            <TableCell>{pago.comentario || "-"}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+              <HistorialPagos pagos={pagos} deudores={deudores} />
             </TabsContent>
             
             <TabsContent value="graficos">
-              <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Evolución de Préstamos y Pagos</CardTitle>
-                  <CardDescription>
-                    Montos de préstamos y pagos durante los últimos 6 meses
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[400px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={montosData()}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="mes" />
-                        <YAxis />
-                        <Tooltip formatter={formatTooltipValue} />
-                        <Legend />
-                        <Bar dataKey="prestamos" name="Préstamos" fill="#3b82f6" />
-                        <Bar dataKey="pagos" name="Pagos" fill="#10b981" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Distribución por Estado</CardTitle>
-                    <CardDescription>Estado actual de los préstamos</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={estadoPrestamosData}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={100}
-                            dataKey="value"
-                            label={({ name, value }) => `${name}: ${value}`}
-                          >
-                            {estadoPrestamosData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => [`${value} préstamos`, null]} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Métodos de Pago Utilizados</CardTitle>
-                    <CardDescription>Preferencias de los deudores</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={metodosPagoData}
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={100}
-                            dataKey="value"
-                            label={({ name, value }) => `${name}: ${value}`}
-                          >
-                            {metodosPagoData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => [`${value} pagos`, null]} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <EvolucionPrestamosChart data={montosData} />
+              <GraficosDistribucion 
+                estadoPrestamosData={estadoPrestamosData}
+                metodosPagoData={metodosPagoData}
+                colors={COLORS}
+              />
             </TabsContent>
           </Tabs>
         )}
