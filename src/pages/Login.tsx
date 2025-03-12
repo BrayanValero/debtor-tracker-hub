@@ -9,11 +9,12 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@ejemplo.com"); // Valor preestablecido para facilitar pruebas
+  const [password, setPassword] = useState("contraseña"); // Valor preestablecido para facilitar pruebas
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
+  const isDemoMode = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
 
   // Si el usuario ya está autenticado, redirigir al dashboard
   if (user) {
@@ -52,6 +53,11 @@ const Login = () => {
           <p className="mt-2 text-sm text-muted-foreground">
             Ingrese sus credenciales para acceder
           </p>
+          {isDemoMode && (
+            <div className="mt-2 text-xs px-3 py-1 bg-amber-50 text-amber-700 rounded-full inline-block">
+              Modo demostración activo
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
