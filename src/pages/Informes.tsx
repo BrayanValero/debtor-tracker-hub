@@ -1,9 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { supabase, Deudor, Pago, ResumenEstadisticas } from "@/lib/supabase";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { DownloadIcon } from "lucide-react";
+import { 
+  DownloadIcon, 
+  FileDown, 
+  Users, 
+  FileText 
+} from "lucide-react";
 import { addDays, isBefore } from "date-fns";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
@@ -16,6 +20,15 @@ import ListadoDeudores from "@/components/informes/ListadoDeudores";
 import HistorialPagos from "@/components/informes/HistorialPagos";
 import GraficosDistribucion from "@/components/informes/GraficosDistribucion";
 import { calcularMontosData } from "@/utils/informes-utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const Informes = () => {
   const [estadisticas, setEstadisticas] = useState<ResumenEstadisticas>({
@@ -29,7 +42,6 @@ const Informes = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("resumen");
 
-  // Colores para los gráficos
   const COLORS = ["#3b82f6", "#10b981", "#f97316", "#f43f5e", "#8b5cf6"];
 
   useEffect(() => {
@@ -37,14 +49,12 @@ const Informes = () => {
       try {
         setLoading(true);
         
-        // Obtener deudores
         const { data: deudoresData, error: deudoresError } = await supabase
           .from("deudores")
           .select("*");
           
         if (deudoresError) throw deudoresError;
         
-        // Obtener pagos
         const { data: pagosData, error: pagosError } = await supabase
           .from("pagos")
           .select("*")
@@ -55,12 +65,10 @@ const Informes = () => {
         const deudoresTyped = deudoresData as Deudor[];
         const pagosTyped = pagosData as Pago[];
         
-        // Calcular estadísticas
         const deudoresActivos = deudoresTyped.filter(d => d.estado === "activo");
         const montoActivo = deudoresActivos.reduce((sum, d) => sum + d.monto_prestado, 0);
         const interesesTotales = deudoresTyped.reduce((sum, d) => sum + d.interes_acumulado, 0);
         
-        // Calcular próximos pagos (deudores con pagos en los próximos 7 días)
         const today = new Date();
         const nextWeek = addDays(today, 7);
         
@@ -72,7 +80,6 @@ const Informes = () => {
             })
           )
           .map(deudor => {
-            // Encontrar la próxima fecha de pago
             const proximaFecha = deudor.fechas_pago
               .filter(fecha => {
                 const fechaPago = new Date(fecha);
@@ -87,7 +94,6 @@ const Informes = () => {
           })
           .sort((a, b) => new Date(a.proximo_pago).getTime() - new Date(b.proximo_pago).getTime());
         
-        // Calcular el saldo pendiente para cada deudor
         const deudoresConSaldo = deudoresTyped.map(deudor => {
           const pagosPorDeudor = pagosTyped.filter(pago => pago.deudor_id === deudor.id);
           const totalPagado = pagosPorDeudor.reduce((sum, pago) => sum + pago.monto_pagado, 0);
@@ -119,35 +125,37 @@ const Informes = () => {
     fetchData();
   }, []);
 
-  // Datos para el gráfico de estado de préstamos
   const estadoPrestamosData = [
     { name: "Activos", value: deudores.filter(d => d.estado === "activo").length },
     { name: "Vencidos", value: deudores.filter(d => d.estado === "vencido").length },
     { name: "Pagados", value: deudores.filter(d => d.estado === "pagado").length }
   ].filter(item => item.value > 0);
 
-  // Datos para el gráfico de métodos de pago
   const metodosPagoData = [
     { name: "Efectivo", value: pagos.filter(p => p.metodo_pago === "efectivo").length },
     { name: "Transferencia", value: pagos.filter(p => p.metodo_pago === "transferencia").length },
     { name: "Otro", value: pagos.filter(p => p.metodo_pago === "otro").length }
   ].filter(item => item.value > 0);
 
-  // Datos para el gráfico de montos por mes
   const montosData = calcularMontosData(deudores, pagos);
 
-  const handleExportarPDF = () => {
-    toast.success("Función de exportar a PDF en desarrollo");
-    // Aquí iría la implementación para exportar a PDF
+  const handleExportarPorDeudor = () => {
+    toast.success("Exportar por deudor en desarrollo");
   };
 
-  const handleExportarExcel = () => {
-    toast.success("Función de exportar a Excel en desarrollo");
-    // Aquí iría la implementación para exportar a Excel
+  const handleExportarInformeGeneral = () => {
+    toast.success("Exportar informe general en desarrollo");
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div 
+      className="min-h-screen bg-cover bg-center"
+      style={{
+        backgroundImage: "url('/lovable-uploads/e8c53d64-a1c3-4d06-9ab0-e2230a56dff1.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      }}
+    >
       <Navbar />
       
       <main className="container mx-auto py-6 px-4">
@@ -159,14 +167,26 @@ const Informes = () => {
             </p>
           </div>
           <div className="flex gap-2 mt-4 md:mt-0">
-            <Button variant="outline" onClick={handleExportarPDF}>
-              <DownloadIcon className="mr-2 h-4 w-4" />
-              Exportar PDF
-            </Button>
-            <Button variant="outline" onClick={handleExportarExcel}>
-              <DownloadIcon className="mr-2 h-4 w-4" />
-              Exportar Excel
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <FileDown className="mr-2 h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Opciones de exportación</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleExportarPorDeudor}>
+                  <Users className="mr-2 h-4 w-4" />
+                  Exportar por Deudor
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportarInformeGeneral}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Informe General
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
@@ -178,14 +198,14 @@ const Informes = () => {
           </div>
         ) : (
           <Tabs defaultValue="resumen" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-6">
+            <TabsList className="mb-6 bg-white/80 backdrop-blur-sm">
               <TabsTrigger value="resumen">Resumen</TabsTrigger>
               <TabsTrigger value="deudores">Deudores</TabsTrigger>
               <TabsTrigger value="pagos">Pagos</TabsTrigger>
               <TabsTrigger value="graficos">Gráficos</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="resumen">
+            <TabsContent value="resumen" className="bg-white/80 backdrop-blur-sm p-6 rounded-lg">
               <EstadisticasCards estadisticas={estadisticas} />
               <PagosProximos pagosProximos={estadisticas.pagos_proximos} />
               
@@ -195,15 +215,15 @@ const Informes = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="deudores">
+            <TabsContent value="deudores" className="bg-white/80 backdrop-blur-sm p-6 rounded-lg">
               <ListadoDeudores deudores={deudores} />
             </TabsContent>
             
-            <TabsContent value="pagos">
+            <TabsContent value="pagos" className="bg-white/80 backdrop-blur-sm p-6 rounded-lg">
               <HistorialPagos pagos={pagos} deudores={deudores} />
             </TabsContent>
             
-            <TabsContent value="graficos">
+            <TabsContent value="graficos" className="bg-white/80 backdrop-blur-sm p-6 rounded-lg">
               <EvolucionPrestamosChart data={montosData} />
               <GraficosDistribucion 
                 estadoPrestamosData={estadoPrestamosData}
