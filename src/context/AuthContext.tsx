@@ -20,15 +20,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("AuthProvider initializing...");
+    
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log("Getting initial session...");
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error getting session:", error.message);
           toast.error("Error de autenticación");
         } else {
+          console.log("Session data:", data.session ? "Session exists" : "No session");
           setSession(data.session);
           setUser(data.session?.user ?? null);
         }
@@ -36,13 +40,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error("Error initializing auth:", error);
       } finally {
         setLoading(false);
+        console.log("Auth initialization complete");
       }
     };
 
     initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -56,14 +62,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
+      console.log("Attempting sign in with:", email);
       
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
+        console.error("Sign in error:", error.message);
         toast.error("Error al iniciar sesión: " + error.message);
         throw error;
       }
       
+      console.log("Sign in successful");
       toast.success("Inicio de sesión exitoso");
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
@@ -76,12 +85,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       setLoading(true);
+      console.log("Signing out...");
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error("Sign out error:", error.message);
         toast.error("Error al cerrar sesión: " + error.message);
-        console.error("Error al cerrar sesión:", error);
       } else {
+        console.log("Sign out successful");
         toast.success("Sesión cerrada");
       }
     } catch (error) {

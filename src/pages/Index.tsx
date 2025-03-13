@@ -1,21 +1,26 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
-    if (!loading) {
+    // Only redirect if we've finished loading authentication state
+    if (!loading && !isRedirecting) {
+      setIsRedirecting(true);
       if (user) {
+        console.log("User is authenticated, redirecting to dashboard");
         navigate("/dashboard");
       } else {
+        console.log("User is not authenticated, redirecting to login");
         navigate("/login");
       }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, isRedirecting]);
 
   // Show a loading indicator while checking authentication status
   return (
