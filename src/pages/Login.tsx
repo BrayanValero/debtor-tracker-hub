@@ -42,8 +42,15 @@ const Login = () => {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white px-4 sm:px-6 animate-fade-in">
-      <div className="glass-morphism w-full max-w-md rounded-2xl p-8 shadow-xl animate-slide-up">
+    <div 
+      className="flex h-screen items-center justify-center"
+      style={{
+        backgroundImage: "url('/lovable-uploads/e8c53d64-a1c3-4d06-9ab0-e2230a56dff1.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      }}
+    >
+      <div className="glass-morphism w-full max-w-md rounded-2xl p-8 shadow-xl animate-slide-up bg-white/80 backdrop-blur-lg">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white">
             <CreditCard className="h-6 w-6" />
