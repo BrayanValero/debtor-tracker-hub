@@ -17,6 +17,7 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
+  // Show a loading indicator while checking authentication status
   return (
     <div className="flex h-screen items-center justify-center">
       <div className="animate-pulse text-center">
