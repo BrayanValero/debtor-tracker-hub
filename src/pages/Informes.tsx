@@ -7,8 +7,7 @@ import {
   FileDown, 
   Users, 
   FileText,
-  FileSpreadsheet,
-  FilePdf
+  FileSpreadsheet
 } from "lucide-react";
 import { addDays, isBefore, differenceInDays } from "date-fns";
 import { toast } from "sonner";
@@ -220,7 +219,7 @@ const Informes = () => {
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
                     <DropdownMenuItem onClick={() => handleExportarPDF('deudor')}>
-                      <FilePdf className="mr-2 h-4 w-4" />
+                      <FileText className="mr-2 h-4 w-4" />
                       PDF
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleExportarExcel('deudor')}>
@@ -237,7 +236,7 @@ const Informes = () => {
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
                     <DropdownMenuItem onClick={() => handleExportarPDF('general')}>
-                      <FilePdf className="mr-2 h-4 w-4" />
+                      <FileText className="mr-2 h-4 w-4" />
                       PDF
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleExportarExcel('general')}>

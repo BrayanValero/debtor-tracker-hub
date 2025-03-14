@@ -1,6 +1,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/supabase";
+import { differenceInDays } from "date-fns";
 
 // Use Supabase credentials from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://ygcbqgzpbsmqtvsfqbjb.supabase.co";
