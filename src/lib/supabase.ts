@@ -21,6 +21,7 @@ export type Deudor = {
   interes_acumulado: number;
   estado: "activo" | "vencido" | "pagado";
   saldo_pendiente?: number; // Campo calculado
+  foto_url?: string; // Nuevo campo para foto
 };
 
 export type Pago = {
@@ -37,4 +38,22 @@ export type ResumenEstadisticas = {
   monto_total_activo: number;
   total_intereses: number;
   pagos_proximos: Array<Deudor & { proximo_pago: string }>;
+};
+
+// Función para calcular interés hasta la fecha de pago
+export const calcularInteresProporcional = (
+  deudor: Deudor,
+  fechaPago: Date
+): number => {
+  const fechaPrestamo = new Date(deudor.fecha_prestamo);
+  // Calcular días transcurridos desde el préstamo hasta el pago
+  const diasTranscurridos = differenceInDays(fechaPago, fechaPrestamo);
+  
+  // Calcular el interés hasta la fecha de pago (suponiendo interés anual)
+  // tasa_interes es un decimal, por ejemplo 0.10 para 10%
+  const interesAnual = deudor.tasa_interes; 
+  const interesDiario = interesAnual / 365;
+  const interesProporcional = deudor.monto_prestado * interesDiario * diasTranscurridos;
+  
+  return interesProporcional;
 };

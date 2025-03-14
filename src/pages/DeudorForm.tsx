@@ -34,9 +34,10 @@ import {
 } from "@/components/ui/select";
 import { supabase, Deudor } from "@/lib/supabase";
 import { toast } from "sonner";
-import { ChevronLeft, CalendarIcon, PlusCircle, X } from "lucide-react";
+import { ChevronLeft, CalendarIcon, PlusCircle, X, Upload, Image } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Definir esquema de validación
 const deudorSchema = z.object({
@@ -57,6 +58,8 @@ const DeudorForm = () => {
   const [nuevaFechaPago, setNuevaFechaPago] = useState<Date | undefined>(undefined);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [foto, setFoto] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const isEditMode = !!id;
 
   // Consultar deudor si estamos en modo edición
@@ -107,6 +110,11 @@ const DeudorForm = () => {
       // Convertir fechas de pago de strings a Date
       const fechasPagoDate = deudor.fechas_pago.map(fecha => new Date(fecha));
       setFechasPago(fechasPagoDate);
+      
+      // Cargar foto si existe
+      if (deudor.foto_url) {
+        setFotoPreview(deudor.foto_url);
+      }
     }
   }, [deudor, form]);
 
@@ -135,6 +143,21 @@ const DeudorForm = () => {
     setFechasPago(nuevasFechas);
   };
 
+  // Manejar cambio de foto
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setFoto(file);
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // Manejar envío del formulario
   const onSubmit = async (values: z.infer<typeof deudorSchema>) => {
     if (fechasPago.length === 0) {
@@ -150,6 +173,36 @@ const DeudorForm = () => {
         fecha.toISOString().split('T')[0]
       );
       
+      // Subir foto si hay una nueva
+      let foto_url = deudor?.foto_url;
+      if (foto) {
+        const fileName = `${Date.now()}-${foto.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('fotos')
+          .upload(`deudores/${fileName}`, foto);
+          
+        if (uploadError) {
+          throw uploadError;
+        }
+        
+        // Obtener URL pública de la foto
+        const { data: { publicUrl } } = supabase.storage
+          .from('fotos')
+          .getPublicUrl(`deudores/${fileName}`);
+          
+        foto_url = publicUrl;
+      }
+      
+      // Calcular interés acumulado proporcional a la tasa
+      const fechaPrestamo = new Date(values.fecha_prestamo);
+      const hoy = new Date();
+      const diasTranscurridos = Math.max(0, Math.floor((hoy.getTime() - fechaPrestamo.getTime()) / (1000 * 60 * 60 * 24)));
+      
+      // Calcular interés acumulado (asumiendo tasa anual)
+      const interesAnual = values.tasa_interes; // Ya está como decimal, ej: 0.10 para 10%
+      const interesDiario = interesAnual / 365;
+      const interesAcumulado = values.monto_prestado * interesDiario * diasTranscurridos;
+      
       // Crear objeto con todos los datos para enviar
       const deudorData = {
         nombre: values.nombre,
@@ -159,8 +212,9 @@ const DeudorForm = () => {
         fecha_prestamo: values.fecha_prestamo.toISOString().split('T')[0],
         fechas_pago: fechasPagoString,
         tasa_interes: values.tasa_interes,
-        interes_acumulado: isEditMode ? deudor?.interes_acumulado : 0,
-        estado: values.estado
+        interes_acumulado: isEditMode ? deudor?.interes_acumulado : interesAcumulado,
+        estado: values.estado,
+        foto_url: foto_url
       };
 
       let error;
@@ -194,6 +248,16 @@ const DeudorForm = () => {
   // Formatear fecha para mostrar
   const formatFecha = (date: Date) => {
     return format(date, "PPP", { locale: es });
+  };
+
+  // Obtener iniciales para avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
   };
 
   return (
@@ -234,52 +298,77 @@ const DeudorForm = () => {
                 {/* Datos personales */}
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold">Datos personales</h2>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="nombre"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nombre</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Nombre del deudor" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  
+                  {/* Foto del deudor */}
+                  <div className="flex flex-col items-center sm:flex-row sm:items-start gap-4 mb-6">
+                    <div className="flex flex-col items-center gap-2">
+                      <Avatar className="w-24 h-24">
+                        <AvatarImage src={fotoPreview || undefined} alt="Foto del deudor" />
+                        <AvatarFallback className="text-2xl">
+                          {form.getValues("nombre") ? getInitials(form.getValues("nombre")) : "??"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <label htmlFor="foto-upload" className="cursor-pointer">
+                        <div className="flex items-center gap-1 text-xs text-primary hover:underline">
+                          <Image className="h-3 w-3" />
+                          {fotoPreview ? "Cambiar foto" : "Agregar foto"}
+                        </div>
+                        <input
+                          id="foto-upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleFotoChange}
+                        />
+                      </label>
+                    </div>
+                    
+                    <div className="flex-1 space-y-4 w-full">
+                      <FormField
+                        control={form.control}
+                        name="nombre"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nombre</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Nombre del deudor" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="celular"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Celular</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Número de celular" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="celular"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Celular</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Número de celular" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Correo electrónico</FormLabel>
+                              <FormControl>
+                                <Input placeholder="correo@ejemplo.com" type="email" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
                   </div>
-
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Correo electrónico</FormLabel>
-                        <FormControl>
-                          <Input placeholder="correo@ejemplo.com" type="email" {...field} />
-                        </FormControl>
-                        <FormDescription>
-                          Se usará para enviar notificaciones.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
 
                 {/* Datos del préstamo */}
@@ -317,8 +406,17 @@ const DeudorForm = () => {
                               type="number" 
                               step="0.01" 
                               {...field}
+                              onChange={(e) => {
+                                // Convertir de porcentaje a decimal
+                                const value = parseFloat(e.target.value);
+                                field.onChange(value / 100);
+                              }}
+                              value={field.value * 100}
                             />
                           </FormControl>
+                          <FormDescription>
+                            Interés anual, se calculará proporcional a los días.
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

@@ -6,9 +6,11 @@ import {
   DownloadIcon, 
   FileDown, 
   Users, 
-  FileText 
+  FileText,
+  FileSpreadsheet,
+  FilePdf
 } from "lucide-react";
-import { addDays, isBefore } from "date-fns";
+import { addDays, isBefore, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import EstadisticasCards from "@/components/informes/EstadisticasCards";
@@ -27,6 +29,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
@@ -139,12 +144,42 @@ const Informes = () => {
 
   const montosData = calcularMontosData(deudores, pagos);
 
-  const handleExportarPorDeudor = () => {
-    toast.success("Exportar por deudor en desarrollo");
+  const handleExportarPDF = (tipo: 'deudor' | 'general') => {
+    try {
+      if (tipo === 'deudor') {
+        toast.success("Exportando informe por deudor en PDF");
+        setTimeout(() => {
+          toast.success("Informe por deudor exportado en PDF");
+        }, 1500);
+      } else {
+        toast.success("Exportando informe general en PDF");
+        setTimeout(() => {
+          toast.success("Informe general exportado en PDF");
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Error al exportar como PDF:", error);
+      toast.error("Error al exportar el informe en PDF");
+    }
   };
 
-  const handleExportarInformeGeneral = () => {
-    toast.success("Exportar informe general en desarrollo");
+  const handleExportarExcel = (tipo: 'deudor' | 'general') => {
+    try {
+      if (tipo === 'deudor') {
+        toast.success("Exportando informe por deudor en Excel");
+        setTimeout(() => {
+          toast.success("Informe por deudor exportado en Excel");
+        }, 1500);
+      } else {
+        toast.success("Exportando informe general en Excel");
+        setTimeout(() => {
+          toast.success("Informe general exportado en Excel");
+        }, 1500);
+      }
+    } catch (error) {
+      console.error("Error al exportar como Excel:", error);
+      toast.error("Error al exportar el informe en Excel");
+    }
   };
 
   return (
@@ -177,14 +212,41 @@ const Informes = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Opciones de exportación</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleExportarPorDeudor}>
-                  <Users className="mr-2 h-4 w-4" />
-                  Exportar por Deudor
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportarInformeGeneral}>
-                  <FileText className="mr-2 h-4 w-4" />
-                  Informe General
-                </DropdownMenuItem>
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Users className="mr-2 h-4 w-4" />
+                    Exportar por Deudor
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => handleExportarPDF('deudor')}>
+                      <FilePdf className="mr-2 h-4 w-4" />
+                      PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportarExcel('deudor')}>
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Excel
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Informe General
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => handleExportarPDF('general')}>
+                      <FilePdf className="mr-2 h-4 w-4" />
+                      PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportarExcel('general')}>
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Excel
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

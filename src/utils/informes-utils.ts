@@ -1,5 +1,6 @@
 
 import { Deudor, Pago } from "@/lib/supabase";
+import { differenceInDays } from "date-fns";
 
 export const calcularMontosData = (deudores: Deudor[], pagos: Pago[]) => {
   const montosMap = new Map<string, { prestado: number; pagado: number }>();
@@ -51,4 +52,46 @@ export const formatTooltipValue = (value: any) => {
     return value.toFixed(2);
   }
   return value;
+};
+
+// Función para calcular el interés acumulado hasta una fecha específica
+export const calcularInteresHastaFecha = (
+  deudor: Deudor,
+  fechaFinal: Date
+): number => {
+  const fechaPrestamo = new Date(deudor.fecha_prestamo);
+  
+  // Si la fecha final es anterior a la fecha del préstamo, no hay interés
+  if (fechaFinal < fechaPrestamo) {
+    return 0;
+  }
+  
+  // Calcular días transcurridos desde el préstamo hasta la fecha final
+  const diasTranscurridos = differenceInDays(fechaFinal, fechaPrestamo);
+  
+  // Calcular interés diario (suponiendo que tasa_interes es anual)
+  const interesDiario = deudor.tasa_interes / 365;
+  
+  // Calcular interés acumulado
+  const interesAcumulado = deudor.monto_prestado * interesDiario * diasTranscurridos;
+  
+  return interesAcumulado;
+};
+
+// Calcular el saldo pendiente incluyendo el interés proporcional
+export const calcularSaldoPendiente = (
+  deudor: Deudor,
+  pagos: Pago[],
+  fechaActual: Date = new Date()
+): number => {
+  // Calcular interés acumulado hasta la fecha actual
+  const interesAcumulado = calcularInteresHastaFecha(deudor, fechaActual);
+  
+  // Calcular total pagado
+  const totalPagado = pagos.reduce((sum, pago) => sum + pago.monto_pagado, 0);
+  
+  // Calcular saldo pendiente
+  const saldoPendiente = deudor.monto_prestado + interesAcumulado - totalPagado;
+  
+  return Math.max(0, saldoPendiente);
 };
