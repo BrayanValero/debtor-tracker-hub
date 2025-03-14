@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -39,7 +38,6 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-// Definir esquema de validación
 const deudorSchema = z.object({
   nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
   celular: z.string().min(8, "El celular debe tener al menos 8 caracteres"),
@@ -62,7 +60,6 @@ const DeudorForm = () => {
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const isEditMode = !!id;
 
-  // Consultar deudor si estamos en modo edición
   const { data: deudor, isLoading } = useQuery({
     queryKey: ["deudor", id],
     queryFn: async () => {
@@ -80,7 +77,6 @@ const DeudorForm = () => {
     enabled: isEditMode,
   });
 
-  // Configurar formulario con react-hook-form
   const form = useForm<z.infer<typeof deudorSchema>>({
     resolver: zodResolver(deudorSchema),
     defaultValues: {
@@ -94,7 +90,6 @@ const DeudorForm = () => {
     },
   });
 
-  // Cargar datos del deudor en el formulario cuando esté disponible
   useEffect(() => {
     if (deudor) {
       form.reset({
@@ -107,18 +102,15 @@ const DeudorForm = () => {
         estado: deudor.estado,
       });
 
-      // Convertir fechas de pago de strings a Date
       const fechasPagoDate = deudor.fechas_pago.map(fecha => new Date(fecha));
       setFechasPago(fechasPagoDate);
       
-      // Cargar foto si existe
       if (deudor.foto_url) {
         setFotoPreview(deudor.foto_url);
       }
     }
   }, [deudor, form]);
 
-  // Añadir nueva fecha de pago
   const handleAgregarFechaPago = () => {
     if (!nuevaFechaPago) return;
     
@@ -136,20 +128,17 @@ const DeudorForm = () => {
     setIsCalendarOpen(false);
   };
 
-  // Eliminar fecha de pago
   const handleEliminarFechaPago = (index: number) => {
     const nuevasFechas = [...fechasPago];
     nuevasFechas.splice(index, 1);
     setFechasPago(nuevasFechas);
   };
 
-  // Manejar cambio de foto
   const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setFoto(file);
       
-      // Crear preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setFotoPreview(reader.result as string);
@@ -158,7 +147,6 @@ const DeudorForm = () => {
     }
   };
 
-  // Manejar envío del formulario
   const onSubmit = async (values: z.infer<typeof deudorSchema>) => {
     if (fechasPago.length === 0) {
       toast.error("Debes agregar al menos una fecha de pago");
@@ -168,12 +156,10 @@ const DeudorForm = () => {
     try {
       setIsSubmitting(true);
       
-      // Convertir fechas de pago a formato ISO string para Supabase
       const fechasPagoString = fechasPago.map(fecha => 
         fecha.toISOString().split('T')[0]
       );
       
-      // Subir foto si hay una nueva
       let foto_url = deudor?.foto_url;
       if (foto) {
         const fileName = `${Date.now()}-${foto.name}`;
@@ -185,7 +171,6 @@ const DeudorForm = () => {
           throw uploadError;
         }
         
-        // Obtener URL pública de la foto
         const { data: { publicUrl } } = supabase.storage
           .from('fotos')
           .getPublicUrl(`deudores/${fileName}`);
@@ -193,17 +178,14 @@ const DeudorForm = () => {
         foto_url = publicUrl;
       }
       
-      // Calcular interés acumulado proporcional a la tasa
       const fechaPrestamo = new Date(values.fecha_prestamo);
       const hoy = new Date();
       const diasTranscurridos = Math.max(0, Math.floor((hoy.getTime() - fechaPrestamo.getTime()) / (1000 * 60 * 60 * 24)));
       
-      // Calcular interés acumulado (asumiendo tasa anual)
-      const interesAnual = values.tasa_interes; // Ya está como decimal, ej: 0.10 para 10%
+      const interesAnual = values.tasa_interes;
       const interesDiario = interesAnual / 365;
       const interesAcumulado = values.monto_prestado * interesDiario * diasTranscurridos;
       
-      // Crear objeto con todos los datos para enviar
       const deudorData = {
         nombre: values.nombre,
         celular: values.celular,
@@ -219,7 +201,6 @@ const DeudorForm = () => {
 
       let error;
       
-      // Actualizar o crear deudor según corresponda
       if (isEditMode) {
         ({ error } = await supabase
           .from("deudores")
@@ -245,12 +226,10 @@ const DeudorForm = () => {
     }
   };
 
-  // Formatear fecha para mostrar
   const formatFecha = (date: Date) => {
     return format(date, "PPP", { locale: es });
   };
 
-  // Obtener iniciales para avatar fallback
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -265,7 +244,6 @@ const DeudorForm = () => {
       <Navbar />
       
       <div className="page-container max-w-3xl">
-        {/* Encabezado */}
         <div className="mb-8">
           <Button 
             variant="ghost" 
@@ -295,11 +273,9 @@ const DeudorForm = () => {
           <div className="glass-morphism rounded-xl p-6 shadow-lg">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                {/* Datos personales */}
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold">Datos personales</h2>
                   
-                  {/* Foto del deudor */}
                   <div className="flex flex-col items-center sm:flex-row sm:items-start gap-4 mb-6">
                     <div className="flex flex-col items-center gap-2">
                       <Avatar className="w-24 h-24">
@@ -371,7 +347,6 @@ const DeudorForm = () => {
                   </div>
                 </div>
 
-                {/* Datos del préstamo */}
                 <div className="space-y-4">
                   <h2 className="text-xl font-semibold">Datos del préstamo</h2>
                   <div className="grid gap-4 md:grid-cols-2">
@@ -399,7 +374,7 @@ const DeudorForm = () => {
                       name="tasa_interes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Tasa de interés (%)</FormLabel>
+                          <FormLabel>Tasa de interés mensual (%)</FormLabel>
                           <FormControl>
                             <Input 
                               placeholder="0.00" 
@@ -407,7 +382,6 @@ const DeudorForm = () => {
                               step="0.01" 
                               {...field}
                               onChange={(e) => {
-                                // Convertir de porcentaje a decimal
                                 const value = parseFloat(e.target.value);
                                 field.onChange(value / 100);
                               }}
@@ -415,7 +389,7 @@ const DeudorForm = () => {
                             />
                           </FormControl>
                           <FormDescription>
-                            Interés anual, se calculará proporcional a los días.
+                            Interés mensual, se calculará proporcional a los días.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -488,7 +462,6 @@ const DeudorForm = () => {
                     />
                   </div>
 
-                  {/* Fechas de pago */}
                   <div className="space-y-2">
                     <FormLabel>Fechas de pago</FormLabel>
                     <div className="flex flex-wrap gap-2 mb-2">
@@ -560,7 +533,6 @@ const DeudorForm = () => {
                   </div>
                 </div>
 
-                {/* Botones de acción */}
                 <div className="flex justify-end gap-4 pt-4">
                   <Button
                     type="button"

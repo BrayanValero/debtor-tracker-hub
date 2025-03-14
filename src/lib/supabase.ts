@@ -50,10 +50,10 @@ export const calcularInteresProporcional = (
   // Calcular días transcurridos desde el préstamo hasta el pago
   const diasTranscurridos = differenceInDays(fechaPago, fechaPrestamo);
   
-  // Calcular el interés hasta la fecha de pago (suponiendo interés anual)
+  // Calcular el interés hasta la fecha de pago (suponiendo interés MENSUAL)
   // tasa_interes es un decimal, por ejemplo 0.10 para 10%
-  const interesAnual = deudor.tasa_interes; 
-  const interesDiario = interesAnual / 365;
+  const interesMensual = deudor.tasa_interes; 
+  const interesDiario = interesMensual / 30; // Basado en un mes de 30 días
   const interesProporcional = deudor.monto_prestado * interesDiario * diasTranscurridos;
   
   return interesProporcional;
