@@ -1,4 +1,3 @@
-
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/supabase";
 import { differenceInDays } from "date-fns";
@@ -22,7 +21,7 @@ export type Deudor = {
   interes_acumulado: number;
   estado: "activo" | "vencido" | "pagado";
   saldo_pendiente?: number; // Campo calculado
-  foto_url?: string; // Nuevo campo para foto
+  foto_url?: string; // Campo para foto
 };
 
 export type Pago = {
@@ -50,8 +49,7 @@ export const calcularInteresProporcional = (
   // Calcular días transcurridos desde el préstamo hasta el pago
   const diasTranscurridos = differenceInDays(fechaPago, fechaPrestamo);
   
-  // Calcular el interés hasta la fecha de pago (suponiendo interés MENSUAL)
-  // tasa_interes es un decimal, por ejemplo 0.10 para 10%
+  // Calcular el interés hasta la fecha de pago (tasa_interes ya es MENSUAL)
   const interesMensual = deudor.tasa_interes; 
   const interesDiario = interesMensual / 30; // Basado en un mes de 30 días
   const interesProporcional = deudor.monto_prestado * interesDiario * diasTranscurridos;

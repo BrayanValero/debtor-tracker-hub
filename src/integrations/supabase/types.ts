@@ -16,6 +16,7 @@ export type Database = {
           estado: string | null
           fecha_prestamo: string
           fechas_pago: string[]
+          foto_url: string | null
           id: string
           interes_acumulado: number | null
           monto_prestado: number
@@ -28,6 +29,7 @@ export type Database = {
           estado?: string | null
           fecha_prestamo: string
           fechas_pago: string[]
+          foto_url?: string | null
           id?: string
           interes_acumulado?: number | null
           monto_prestado: number
@@ -40,6 +42,7 @@ export type Database = {
           estado?: string | null
           fecha_prestamo?: string
           fechas_pago?: string[]
+          foto_url?: string | null
           id?: string
           interes_acumulado?: number | null
           monto_prestado?: number
