@@ -69,7 +69,7 @@ export const calcularInteresHastaFecha = (
   // Calcular días transcurridos desde el préstamo hasta la fecha final
   const diasTranscurridos = differenceInDays(fechaFinal, fechaPrestamo);
   
-  // Calcular interés diario (suponiendo que tasa_interes es mensual)
+  // Calcular interés diario (basado en tasa mensual)
   const interesDiario = deudor.tasa_interes / 30;
   
   // Calcular interés acumulado

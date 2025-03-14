@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -162,12 +163,28 @@ const DeudorForm = () => {
       
       let foto_url = deudor?.foto_url;
       if (foto) {
+        // Create a storage bucket if it doesn't exist
+        const { data: bucketData, error: bucketError } = await supabase.storage
+          .getBucket('fotos');
+          
+        if (bucketError && bucketError.message.includes('The resource was not found')) {
+          // Bucket doesn't exist, create it
+          const { error: createBucketError } = await supabase.storage
+            .createBucket('fotos', { public: true });
+            
+          if (createBucketError) {
+            console.error("Error creating bucket:", createBucketError);
+            throw createBucketError;
+          }
+        }
+        
         const fileName = `${Date.now()}-${foto.name}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('fotos')
           .upload(`deudores/${fileName}`, foto);
           
         if (uploadError) {
+          console.error("Error uploading photo:", uploadError);
           throw uploadError;
         }
         
@@ -182,9 +199,18 @@ const DeudorForm = () => {
       const hoy = new Date();
       const diasTranscurridos = Math.max(0, Math.floor((hoy.getTime() - fechaPrestamo.getTime()) / (1000 * 60 * 60 * 24)));
       
-      const interesAnual = values.tasa_interes;
-      const interesDiario = interesAnual / 365;
+      // Interés mensual convertido a tasa diaria
+      const interesMensual = values.tasa_interes;
+      const interesDiario = interesMensual / 30;
       const interesAcumulado = values.monto_prestado * interesDiario * diasTranscurridos;
+      
+      console.log("Datos a guardar:", {
+        nombre: values.nombre,
+        monto_prestado: values.monto_prestado,
+        tasa_interes: values.tasa_interes,
+        interes_acumulado: interesAcumulado,
+        foto_url
+      });
       
       const deudorData = {
         nombre: values.nombre,
@@ -199,20 +225,23 @@ const DeudorForm = () => {
         foto_url: foto_url
       };
 
-      let error;
+      let result;
       
       if (isEditMode) {
-        ({ error } = await supabase
+        result = await supabase
           .from("deudores")
           .update(deudorData)
-          .eq("id", id));
+          .eq("id", id);
       } else {
-        ({ error } = await supabase
+        result = await supabase
           .from("deudores")
-          .insert([deudorData]));
+          .insert([deudorData]);
       }
       
-      if (error) throw error;
+      if (result.error) {
+        console.error("Error al guardar deudor:", result.error);
+        throw result.error;
+      }
       
       toast.success(`Deudor ${isEditMode ? "actualizado" : "creado"} correctamente`);
       queryClient.invalidateQueries({ queryKey: ["deudores"] });

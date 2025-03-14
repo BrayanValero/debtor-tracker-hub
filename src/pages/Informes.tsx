@@ -145,17 +145,53 @@ const Informes = () => {
 
   const handleExportarPDF = (tipo: 'deudor' | 'general') => {
     try {
+      let data: any;
+      let filename: string;
+      
       if (tipo === 'deudor') {
-        toast.success("Exportando informe por deudor en PDF");
-        setTimeout(() => {
-          toast.success("Informe por deudor exportado en PDF");
-        }, 1500);
+        data = deudores.map(deudor => ({
+          id: deudor.id,
+          nombre: deudor.nombre,
+          celular: deudor.celular,
+          email: deudor.email,
+          monto_prestado: deudor.monto_prestado,
+          fecha_prestamo: deudor.fecha_prestamo,
+          tasa_interes: deudor.tasa_interes * 100 + '%',
+          interes_acumulado: deudor.interes_acumulado,
+          estado: deudor.estado,
+          saldo_pendiente: deudor.saldo_pendiente || 0
+        }));
+        filename = 'informe-deudores.json';
       } else {
-        toast.success("Exportando informe general en PDF");
-        setTimeout(() => {
-          toast.success("Informe general exportado en PDF");
-        }, 1500);
+        data = {
+          estadisticas: {
+            total_prestamos_activos: estadisticas.total_prestamos_activos,
+            monto_total_activo: estadisticas.monto_total_activo,
+            total_intereses: estadisticas.total_intereses
+          },
+          deudores: deudores.length,
+          pagos: pagos.length
+        };
+        filename = 'informe-general.json';
       }
+      
+      const jsonString = JSON.stringify(data, null, 2);
+      
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Informe ${tipo === 'deudor' ? 'por deudor' : 'general'} exportado correctamente`);
     } catch (error) {
       console.error("Error al exportar como PDF:", error);
       toast.error("Error al exportar el informe en PDF");
@@ -164,17 +200,52 @@ const Informes = () => {
 
   const handleExportarExcel = (tipo: 'deudor' | 'general') => {
     try {
+      let csvContent: string;
+      let filename: string;
+      
       if (tipo === 'deudor') {
-        toast.success("Exportando informe por deudor en Excel");
-        setTimeout(() => {
-          toast.success("Informe por deudor exportado en Excel");
-        }, 1500);
+        const headers = ['ID', 'Nombre', 'Celular', 'Email', 'Monto Prestado', 'Fecha Préstamo', 'Tasa Interés', 'Interés Acumulado', 'Estado', 'Saldo Pendiente'];
+        
+        const rows = deudores.map(deudor => [
+          deudor.id,
+          deudor.nombre,
+          deudor.celular,
+          deudor.email,
+          deudor.monto_prestado.toString(),
+          deudor.fecha_prestamo,
+          (deudor.tasa_interes * 100).toString() + '%',
+          deudor.interes_acumulado.toString(),
+          deudor.estado,
+          (deudor.saldo_pendiente || 0).toString()
+        ]);
+        
+        csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        filename = 'informe-deudores.csv';
       } else {
-        toast.success("Exportando informe general en Excel");
-        setTimeout(() => {
-          toast.success("Informe general exportado en Excel");
-        }, 1500);
+        csvContent = 'Concepto,Valor\n' +
+                     `Total Préstamos Activos,${estadisticas.total_prestamos_activos}\n` +
+                     `Monto Total Activo,${estadisticas.monto_total_activo}\n` +
+                     `Total Intereses,${estadisticas.total_intereses}\n` +
+                     `Total Deudores,${deudores.length}\n` +
+                     `Total Pagos,${pagos.length}`;
+        filename = 'informe-general.csv';
       }
+      
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      URL.revokeObjectURL(url);
+      
+      toast.success(`Informe ${tipo === 'deudor' ? 'por deudor' : 'general'} exportado correctamente`);
     } catch (error) {
       console.error("Error al exportar como Excel:", error);
       toast.error("Error al exportar el informe en Excel");
